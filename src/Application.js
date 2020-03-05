@@ -1,38 +1,46 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useReducer } from 'react';
 import id from 'uuid/v4';
 import Grudges from './Grudges';
 import NewGrudge from './NewGrudge';
 import initialState from './initialState';
 
+export const ActionTypes = {
+  ADD_GRUDGE: 'ADD_GRUDGE',
+  TOGGLE_FORGIVENESS: 'TOGGLE_FORGIVENESS'
+};
+
+const reducer = (state, action) => {
+  switch (action.type) {
+    case ActionTypes.ADD_GRUDGE:
+      return [...state, action.payload];
+    case ActionTypes.TOGGLE_FORGIVENESS:
+      return state.map(grudge =>
+        grudge.id === action.payload.id
+          ? { ...grudge, forgiven: !grudge.forgiven }
+          : grudge
+      );
+    default:
+      return state;
+  }
+};
+
 const Application = () => {
-  const [grudges, setGrudges] = useState(initialState);
+  const [grudges, dispatch] = useReducer(reducer, initialState);
+
   const addGrudge = useCallback(
     grudge => {
       grudge.id = id();
       grudge.forgiven = false;
-      setGrudges([grudge, ...grudges]);
+      dispatch({ type: ActionTypes.ADD_GRUDGE, payload: grudge });
     },
-    [setGrudges]
+    [dispatch]
   );
 
-  // Because toggleForgiveness has to take dependency on grudges, it can not
-  // improve performance of Gruge as it render every grudge on toggling forgiveness of single grudge.
-  // This problem get fixed by using useReducer
-  // This problem is mentioned here - https://reactjs.org/docs/hooks-faq.html#how-to-read-an-often-changing-value-from-usecallback
-  // and solution of using useReducer dispatch is given here - https://reactjs.org/docs/hooks-faq.html#how-to-avoid-passing-callbacks-down
   const toggleForgiveness = useCallback(
     id => {
-      setGrudges(
-        grudges.map(grudge => {
-          if (grudge.id !== id) return grudge;
-          return {
-            ...grudge,
-            forgiven: !grudge.forgiven
-          };
-        })
-      );
+      dispatch({ type: ActionTypes.TOGGLE_FORGIVENESS, payload: { id } });
     },
-    [grudges, setGrudges]
+    [dispatch]
   );
   console.log('.....Application');
 
